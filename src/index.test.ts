@@ -32,7 +32,7 @@ describe("Worker", () => {
 		it("Should send text from a POST to a matching GET", async () => {
 			const path = "/stuff1"
 			const url = `http://example.com${path}`
-			
+
 			// The get request should wait for the post request to complete
 			const getResponsePromise = worker.fetch(url)
 
@@ -47,6 +47,73 @@ describe("Worker", () => {
 			expect(getResponse.status).toBe(200)
 			const text = await getResponse.text()
 			expect(text).toBe("Hello World 12345")
+		})
+
+		it("Shouldn't send text from a POST to a different GET", async () => {
+			const path1 = "/stuff1"
+			const path2 = "/stuff2"
+			const url = (p: string) => `http://example.com${p}`
+
+			// The get request should wait for the post request to complete
+			const getResponsePromise1 = worker.fetch(url(path1))
+			const getResponsePromise2 = worker.fetch(url(path2))
+
+			// The post request to the same path should receive a response that the text was consumed
+			const postResponse1 = await worker.fetch(url(path1), { method: "POST", body: "Hello World 12345" })
+			expect(postResponse1.status).toBe(200)
+			const postText1 = await postResponse1.text()
+			expect(postText1).toBe("The text was consumed!")
+
+			const postResponse2 = await worker.fetch(url(path2), { method: "POST", body: "Hello World 789" })
+			expect(postResponse2.status).toBe(200)
+			const postText2 = await postResponse2.text()
+			expect(postText2).toBe("The text was consumed!")
+
+			// The get request should now receive the text
+			const getResponse1 = await getResponsePromise1
+			expect(getResponse1.status).toBe(200)
+			const text1 = await getResponse1.text()
+			expect(text1).toBe("Hello World 12345")
+
+			const getResponse2 = await getResponsePromise2
+			expect(getResponse2.status).toBe(200)
+			const text2 = await getResponse2.text()
+			expect(text2).toBe("Hello World 789")
+		})
+
+		it("Should not send the same POST twice", async () => {
+			const path = "/stuff1"
+			const url = (p: string) => `http://example.com${p}`
+
+			// The get request should wait for the post request to complete
+			const getResponsePromise1 = worker.fetch(url(path))
+
+			// The post request to the same path should receive a response that the text was consumed
+			const postResponse1 = await worker.fetch(url(path), { method: "POST", body: "Hello World 12345" })
+			expect(postResponse1.status).toBe(200)
+			const postText1 = await postResponse1.text()
+			expect(postText1).toBe("The text was consumed!")
+
+			// The get request should now receive the text
+			const getResponse1 = await getResponsePromise1
+			expect(getResponse1.status).toBe(200)
+			const text1 = await getResponse1.text()
+			expect(text1).toBe("Hello World 12345")
+
+			// The next get request should wait for the next post request to complete
+			const getResponsePromise2 = worker.fetch(url(path))
+
+			// Send a new POST with different text
+			const postResponse2 = await worker.fetch(url(path), { method: "POST", body: "Hello World 789" })
+			expect(postResponse2.status).toBe(200)
+			const postText2 = await postResponse2.text()
+			expect(postText2).toBe("The text was consumed!")
+			
+			// The get request should receive the new text, not the old text
+			const getResponse2 = await getResponsePromise2
+			expect(getResponse2.status).toBe(200)
+			const text2 = await getResponse2.text()
+			expect(text2).toBe("Hello World 789")
 		})
 	})
 })

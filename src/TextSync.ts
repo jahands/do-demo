@@ -3,10 +3,11 @@ import { Env } from "./types";
 export class TextSync {
   state: DurableObjectState
   env: Env
-  text: string | undefined
+  text: string | null
   constructor(state: DurableObjectState, env: Env) {
     this.state = state
     this.env = env
+    this.text = null
   }
 
   async fetch(request: Request) {
@@ -15,7 +16,9 @@ export class TextSync {
       while (!this.text) {
         await sleep(100)
       }
-      return new Response(this.text)
+      const text = this.text
+      this.text = null // Reset so that the next GET will wait for the next POST
+      return new Response(text)
 
     }else if(request.method === 'POST') {
       const text = await request.text()
