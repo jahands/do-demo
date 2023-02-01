@@ -1,23 +1,7 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `wrangler dev src/index.ts` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `wrangler publish src/index.ts --name my-worker` to publish your worker
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import { Env } from "./types";
 
-export interface Env {
-	// Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-	// MY_KV_NAMESPACE: KVNamespace;
-	//
-	// Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-	// MY_DURABLE_OBJECT: DurableObjectNamespace;
-	//
-	// Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-	// MY_BUCKET: R2Bucket;
-}
+// Need to export all Durable Objects so the runtime can find it
+export { TextSync } from "./TextSync";
 
 export default {
 	async fetch(
@@ -25,6 +9,17 @@ export default {
 		env: Env,
 		ctx: ExecutionContext
 	): Promise<Response> {
-		return new Response("Hello World!");
+		const url = new URL(request.url)
+		if (!url.pathname || url.pathname.length < 5) {
+			return new Response('path must be at least 5 characters', { status: 400 })
+		}
+
+		// Get a Durable Object stub for the given path
+		// We could use anything here, but the path is convenient
+		const id = env.TEXTSYNC.idFromName(url.pathname)
+		const stub = env.TEXTSYNC.get(id)
+
+		// Forward the request to the Durable Object (which is like a single-instance Worker)
+		return stub.fetch(request)
 	},
 };

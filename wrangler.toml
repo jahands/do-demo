@@ -1,3 +1,8 @@
 name = "do-demo"
 main = "src/index.ts"
 compatibility_date = "2023-02-01"
+
+[durable_objects]
+bindings = [
+  { name = "TEXTSYNC", class_name = "TextSync" }
+]
