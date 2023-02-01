@@ -10,7 +10,7 @@ export default {
 		ctx: ExecutionContext
 	): Promise<Response> {
 		const url = new URL(request.url)
-		if (!url.pathname || url.pathname.length < 5) {
+		if (!url.pathname || url.pathname.length < 6) {
 			return new Response('path must be at least 5 characters', { status: 400 })
 		}
 
