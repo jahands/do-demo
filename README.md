@@ -3,4 +3,4 @@ Durable Objects demo
 
 For the demo:
 
-- [Graph](https://beta.tldraw.com/r/v2_GEA0h4xvPGNtQr-gbTRpX)
+- [Diagram](https://miro.com/app/board/uXjVPogtwcw=/?share_link_id=399407161129)
